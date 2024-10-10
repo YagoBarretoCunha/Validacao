@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validação do Formulário</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <form id="formulario" onsubmit="return validarFormulario(event)" aria-labelledby="formularioTitulo">
+        <h1 id="formularioTitulo">Formulário de Cadastro</h1>
+        
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" minlength="3" maxlength="120" pattern="[A-Za-zÀ-ÿ\s]+" required aria-describedby="erro-nome">
+        <span class="erro" id="erro-nome" role="alert"></span>
+        <br>
+
+        <label for="dataNascimento">Data de Nascimento:</label>
+        <input type="text" id="dataNascimento" name="dataNascimento" placeholder="DD/MM/AAAA" pattern="\d{2}/\d{2}/\d{4}" required aria-describedby="erro-dataNascimento">
+        <span class="erro" id="erro-dataNascimento" role="alert"></span>
+        <br>
+
+        <label for="mes">Mês:</label>
+        <input type="number" id="mes" name="mes" min="1" max="12" required aria-describedby="erro-mes">
+        <span class="erro" id="erro-mes" role="alert"></span>
+        <br>
+
+        <button type="submit" id="submitButton">Enviar</button>
+        <button type="button" id="atualizarButton" style="display: none;" onclick="atualizarDado()">Atualizar</button>
+    </form>
+
+    <h2>Dados Salvos</h2>
+    <table id="tabelaDados" role="table" aria-labelledby="tabelaTitulo">
+        <caption id="tabelaTitulo">Lista de Dados Salvos</caption>
+        <thead>
+            <tr>
+                <th scope="col">Nome</th>
+                <th scope="col">Data de Nascimento</th>
+                <th scope="col">Mês</th>
+                <th scope="col">Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Os dados serão inseridos aqui -->
+        </tbody>
+    </table>
+
+    <script>
+        let indexAtualizar = -1; // Índice do dado a ser atualizado
+
+        function validarFormulario(event) {
+            event.preventDefault(); // Impede o envio padrão do formulário
+
+            const nome = document.getElementById('nome').value.trim();
+            const dataNascimento = document.getElementById('dataNascimento').value.trim();
+            const mes = document.getElementById('mes').value.trim();
+
+            // Validação adicional (opcional)
+            if (!nome || !dataNascimento || !mes) {
+                alert('Por favor, preencha todos os campos.');
+                return false;
+            }
+
+            const dados = { nome, dataNascimento, mes };
+            const dadosExistentes = JSON.parse(localStorage.getItem('dadosFormulario')) || [];
+
+            if (indexAtualizar === -1) {
+                // Adiciona novos dados
+                dadosExistentes.push(dados);
+            } else {
+                // Atualiza os dados existentes
+                dadosExistentes[indexAtualizar] = dados;
+                indexAtualizar = -1;
+                document.getElementById('submitButton').style.display = 'inline';
+                document.getElementById('atualizarButton').style.display = 'none';
+            }
+
+            localStorage.setItem('dadosFormulario', JSON.stringify(dadosExistentes));
+
+            document.getElementById('formulario').reset();
+            exibirDados();
+            return false;
+        }
+
+        function exibirDados() {
+            const tabelaBody = document.getElementById('tabelaDados').getElementsByTagName('tbody')[0];
+            tabelaBody.innerHTML = ''; // Limpa a tabela antes de exibir os dados
+
+            const dadosExistentes = JSON.parse(localStorage.getItem('dadosFormulario')) || [];
+            dadosExistentes.forEach((dado, index) => {
+                const novaLinha = tabelaBody.insertRow();
+                novaLinha.insertCell(0).textContent = dado.nome;
+                novaLinha.insertCell(1).textContent = dado.dataNascimento;
+                novaLinha.insertCell(2).textContent = dado.mes;
+
+                const celulaAcao = novaLinha.insertCell(3);
+
+                // Botão Atualizar
+                const botaoAtualizar = document.createElement('button');
+                botaoAtualizar.textContent = 'Atualizar';
+                botaoAtualizar.className = 'botao-atualizar';
+                botaoAtualizar.onclick = () => editarDado(index);
+                celulaAcao.appendChild(botaoAtualizar);
+
+                // Botão Remover
+                const botaoRemover = document.createElement('button');
+                botaoRemover.textContent = 'Remover';
+                botaoRemover.className = 'botao-remover';
+                botaoRemover.onclick = () => removerDado(index);
+                celulaAcao.appendChild(botaoRemover);
+            });
+        }
+
+        function editarDado(index) {
+            const dadosExistentes = JSON.parse(localStorage.getItem('dadosFormulario')) || [];
+            const dado = dadosExistentes[index];
+
+            document.getElementById('nome').value = dado.nome;
+            document.getElementById('dataNascimento').value = dado.dataNascimento;
+            document.getElementById('mes').value = dado.mes;
+
+            indexAtualizar = index;
+
+            document.getElementById('submitButton').style.display = 'none';
+            document.getElementById('atualizarButton').style.display = 'inline';
+        }
+
+        function atualizarDado() {
+            document.getElementById('formulario').dispatchEvent(new Event('submit'));
+        }
+
+        function removerDado(index) {
+            if (confirm('Tem certeza de que deseja remover este dado?')) {
+                const dadosExistentes = JSON.parse(localStorage.getItem('dadosFormulario')) || [];
+                dadosExistentes.splice(index, 1); // Remove o item no índice especificado
+                localStorage.setItem('dadosFormulario', JSON.stringify(dadosExistentes));
+                exibirDados();
+            }
+        }
+
+        // Exibe os dados ao carregar a página
+        window.onload = exibirDados;
+    </script>
+</body>
+</html>
